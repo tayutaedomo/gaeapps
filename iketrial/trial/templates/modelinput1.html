@@ -1,0 +1,25 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Trial ModelInput1登録</title>
+</head>
+<body>
+	<div>
+		<form method="post" action="/trial/modelinput1/">
+			<input type="text" name="value" value="あいうえお">
+			<input type="submit" value="  登録  ">
+		</form>
+	</div>
+	{% if entities %}
+	<div>
+		<table>
+			<caption>登録データ</caption>
+			{% for entity in entities %}
+			<tr><td><a href="/trial/modelinput1/{{ entity.value }}/?eid={{ entity.key.id_or_name }}&key={{ entity.key }}">{{ entity.value }}</a></td><td>{{ entity.key.id_or_name }}</td><td>{{ entity.key }}</td></tr>
+			{% endfor %}
+		</table>
+	</div>
+	{% endif %}
+</body>
+</html>

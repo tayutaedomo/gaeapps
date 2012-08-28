@@ -1,0 +1,25 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>TrialModel</title>
+</head>
+<body>
+	<div>
+		<p>value: {{ value }}</p>
+		<p>key:{{ key }}</p>
+		<p>eid: {{ eid }}</p>
+	</div>
+	<div>
+		{% if e_kname %}
+		<table>
+			<caption>e_kname登録データ</caption>
+			<tr><td>{{ e_kname.value }}</td></tr>
+			<tr><td>{{ e_kname.key }}</td></tr>
+		</table>
+		{% else %}
+		<p>e_knameのデータがありません。</p>
+		{% endif %}
+	</div>
+</body>
+</html>

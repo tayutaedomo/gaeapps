@@ -1,0 +1,14 @@
+application: iketrial
+version: 1
+runtime: python
+api_version: 1
+
+handlers:
+ - url: /trial/.*
+   script: trial/views.py
+
+ - url: /fbweb/.*
+   script: fbweb/views.py
+
+ - url: /media
+   static_dir: media

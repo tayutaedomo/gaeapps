@@ -1,0 +1,80 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>TrialModel</title>
+</head>
+<body>
+	<div>
+		<p>value: {{ value }}</p>
+		<p>key:{{ key }}</p>
+		<p>eid: {{ eid }}</p>
+	</div>
+	<div>
+		{% if e_get_v %}
+		<table>
+			<caption>e_get_v登録データ</caption>
+			<tr><td>{{ e_get_v.value }}</td></tr>
+			<tr><td>{{ e_get_v.key }}</td></tr>
+		</table>
+		{% else %}
+		<p>e_get_vのデータがありません。</p>
+		{% endif %}
+	</div>
+	<div>
+		{% if e_get_k %}
+		<table>
+			<caption>e_get_k登録データ</caption>
+			<tr><td>{{ e_get_k.value }}</td></tr>
+			<tr><td>{{ e_get_k.key }}</td></tr>
+		</table>
+		{% else %}
+		<p>e_get_kのデータがありません。</p>
+		{% endif %}
+	</div>
+	<div>
+		{% if e_id %}
+		<table>
+			<caption>e_id登録データ</caption>
+			<tr><td>{{ e_id.value }}</td></tr>
+			<tr><td>{{ e_id.key }}</td></tr>
+		</table>
+		{% else %}
+		<p>e_idのデータがありません。</p>
+		{% endif %}
+	</div>
+	<div>
+		{% if e_kname_k %}
+		<table>
+			<caption>e_kname_k登録データ</caption>
+			<tr><td>{{ e_kname_k.value }}</td></tr>
+			<tr><td>{{ e_kname_k.key }}</td></tr>
+		</table>
+		{% else %}
+		<p>e_kname_kのデータがありません。</p>
+		{% endif %}
+	</div>
+	<div>
+		{% if e_kname_kn %}
+		<table>
+			<caption>e_kname_kn登録データ</caption>
+			<tr><td>{{ e_kname_kn.value }}</td></tr>
+			<tr><td>{{ e_kname_kn.key }}</td></tr>
+		</table>
+		{% else %}
+		<p>e_kname_knのデータがありません。</p>
+		{% endif %}
+	</div>
+	<div>
+		{% if e_gori %}
+		<table>
+			<caption>e_gori登録データ</caption>
+			<tr><td>{{ e_gori.value }}</td></tr>
+			<tr><td>{{ e_gori.key }}</td></tr>
+		</table>
+		{% else %}
+		<p>e_goriのデータがありません。</p>
+		{% endif %}
+	</div>
+</body>
+</html>
