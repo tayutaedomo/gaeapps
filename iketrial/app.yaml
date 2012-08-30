@@ -10,5 +10,8 @@ handlers:
  - url: /fbweb/.*
    script: fbweb/views.py
 
+ - url: /fbnews/.*
+   script: fbnews/views.py
+
  - url: /media
    static_dir: media
