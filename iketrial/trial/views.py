@@ -7,6 +7,7 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext.webapp import template
 from google.appengine.ext import db
 
+from trial import handlers
 
 APP_ROOT = os.path.dirname(__file__)
 
@@ -179,6 +180,8 @@ application = webapp.WSGIApplication([
 		(r'/trial/modelinput1/(.*?)/?', ModelInput1Page),
 		(r'/trial/modelinput2/(.*?)/?', ModelInput2Page),
 		(r'/trial/modelinput3/(.*?)/?', ModelInput3Page),
+		(r'/trial/sendmail/', handlers.TrialSendingmailHandler),
+		(r'/trial/cron/minutes/', handlers.TrialCronMinutesHandler),
 	])
 
 def main():

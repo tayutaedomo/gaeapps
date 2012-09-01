@@ -4,6 +4,10 @@ runtime: python
 api_version: 1
 
 handlers:
+ - url: /trial/cron/.*
+   script: trial/views.py
+   login: admin
+
  - url: /trial/.*
    script: trial/views.py
 

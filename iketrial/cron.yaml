@@ -1,0 +1,10 @@
+cron:
+# - description: Test running
+#   url: /trial/cron/minutes/
+#   schedule: every 5 minutes
+#   timezone: Asia/Tokyo
+
+# - description: Test running at 00
+#   url: /trial/cron/minutes/
+#   schedule: every hours at 0
+#   timezone: Asia/Tokyo
