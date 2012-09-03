@@ -10,6 +10,8 @@ from datetime import datetime, timedelta
 from google.appengine.ext.webapp import template, util
 from google.appengine.api import memcache
 
+COOKIE_SESSION_KEY = 'coiled-session-fbnews'
+
 def use_session(regenerate):
 	""" Refer from http://d.hatena.ne.jp/coiledcoil/20110212/1297491800 . """
 	def use_session_internal(func):
@@ -17,7 +19,7 @@ def use_session(regenerate):
 			self.session_id = None
 			self.session = None
 
-			session_id = self.request.cookies.get('coiled-session', None)
+			session_id = self.request.cookies.get(COOKIE_SESSION_KEY, None)
 			mc = memcache.Client()
 			if session_id is not None:
 				session = mc.get(session_id, 'session')
@@ -33,15 +35,7 @@ def use_session(regenerate):
 				self.session_id = hashlib.sha1(str(uuid.uuid4())).hexdigest()
 				self.session = {}
 
-			expires_date = datetime.utcnow() + timedelta(days=1)
-			# expires_str = expires_date.strftime("%d %b %Y %H:%M:%S GMT")
-			expires_str = expires_date.strftime("%a, %d %b %Y %H:%M:%S UTC")
-
-			cookie = Cookie.SimpleCookie()
-			cookie["coiled-session"] = self.session_id
-			cookie["coiled-session"]["path"] = "/fbnews/"
-			cookie["coiled-session"]["expires"] = expires_str
-			self.response.headers.add_header("Set-Cookie", cookie.output(header=''))
+			set_cookie_session(self.response.headers, self.session_id)
 
 			func(self)
 
@@ -53,6 +47,27 @@ def use_session(regenerate):
 		return use_session_decorator
 
 	return use_session_internal
+
+def set_cookie_session(headers, session_id):
+	expires_date = datetime.utcnow() + timedelta(days=1)
+	# expires_str = expires_date.strftime("%d %b %Y %H:%M:%S GMT")
+	expires_str = expires_date.strftime("%a, %d %b %Y %H:%M:%S UTC")
+	cookie = Cookie.SimpleCookie()
+	cookie[COOKIE_SESSION_KEY] = session_id
+	cookie[COOKIE_SESSION_KEY]["path"] = "/"
+	cookie[COOKIE_SESSION_KEY]["expires"] = expires_str
+	headers.add_header("Set-Cookie", cookie.output(header=''))
+
+	return headers
+
+def remove_cookie_session(headers):
+	expires_date = datetime.utcnow() - timedelta(days=1)
+	expires_str = expires_date.strftime("%a, %d %b %Y %H:%M:%S UTC")
+	cookie = Cookie.SimpleCookie()
+	cookie[COOKIE_SESSION_KEY] = ''
+	cookie[COOKIE_SESSION_KEY]["path"] = "/"
+	cookie[COOKIE_SESSION_KEY]["expires"] = expires_str
+	self.response.headers.add_header("Set-Cookie", cookie.output(header=''))
 
 def make_random_str(num):
 	s = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz123456789[]{}!$%&'()-^¥:;*+><"

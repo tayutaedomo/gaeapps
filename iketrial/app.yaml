@@ -14,6 +14,10 @@ handlers:
  - url: /fbweb/.*
    script: fbweb/views.py
 
+ - url: /fbnews/develop/.*
+   script: fbnews/views.py
+   login: admin
+
  - url: /fbnews/.*
    script: fbnews/views.py
 

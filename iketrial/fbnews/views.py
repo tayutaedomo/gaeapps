@@ -14,7 +14,7 @@ from google.appengine.ext import db
 from google.appengine.api import memcache
 
 from fbnews.utils import use_session
-from fbnews.utils import make_csrf_code
+from fbnews import utils
 from fbnews import models
 from fbnews import settings
 
@@ -31,20 +31,16 @@ class LoginPage(webapp.RequestHandler):
 class LogoutPage(webapp.RequestHandler):
 	@use_session(regenerate=False)
 	def get(self):
-		session_id = self.request.cookies.get('coiled-session', None)
+		session_id = self.request.cookies.get('coiled-session-fbnews', None)
+
 		# Clear memcach data.
 		mc = memcache.Client()
 		if session_id is not None:
 			mc.delete(session_id, namespace='session')
+
 		# Clear cookie data.
-		expires_date = datetime.utcnow() - timedelta(days=1)
-		expires_str = expires_date.strftime("%a, %d %b %Y %H:%M:%S UTC")
-		cookie = Cookie.SimpleCookie()
-		cookie['coiled-session'] = ''
-		cookie["coiled-session"]["path"] = "/fbnews/"
-		cookie["coiled-session"]["expires"] = expires_str
-		self.response.headers.add_header("Set-Cookie", cookie.output(header=''))
-		self.redirect(SITE_URL_ROOT + 'login/')
+		utils.remove_cookie_session(self.response.headers)
+		self.redirect('/fbnews/login/')
 
 class RedirectPage(webapp.RequestHandler):
 	@use_session(regenerate=False)
@@ -52,7 +48,7 @@ class RedirectPage(webapp.RequestHandler):
 		redirect_uri = SITE_URL_ROOT + 'redirect/'
 		if self.request.get('code', '') is '':
 			# Connect to Facebook.
-			self.session['state'] = make_csrf_code()
+			self.session['state'] = utils.make_csrf_code()
 			params = {
 				'client_id': settings.APP_ID,
 				'redirect_uri': redirect_uri,
@@ -76,20 +72,12 @@ class RedirectPage(webapp.RequestHandler):
 			f = urllib.urlopen(url)
 
 			# Get some info by Facebook API.
-			parsed_contents = cgi.parse_qs(f.read())
-			url = 'https://graph.facebook.com/me?access_token=' + parsed_contents['access_token'][0] + '&fields=name'
-			f = urllib.urlopen(url)
-			me = simplejson.loads(f.read())
+			me = get_profile(parsed_contents['access_token'][0])
 
 			# Save to Datastore.
 			query = db.GqlQuery("SELECT * FROM FbnewsFacebookConnect WHERE facebook_user_id = '%s'" % (me['id']));
-			query.fetch(1)
 			if (query.count(1) is 0):
-				user = models.FbnewsFacebookConnect(
-					facebook_user_id=me['id'],
-					facebook_name=me['name'],
-					facebook_access_token=parsed_contents['access_token'][0])
-				db.put(user)
+				create_FbnewsFacebookConnect(me['id'], me['name'], parsed_contents['access_token'][0])
 			else:
 				user = query.get()
 
@@ -97,13 +85,13 @@ class RedirectPage(webapp.RequestHandler):
 				# TODO: Need to regeneate session.
 				self.session['user'] = user
 
-			self.redirect(SITE_URL_ROOT + 'index/')
+			self.redirect('/fbnews/index/')
 
 class IndexPage(webapp.RequestHandler):
 	@use_session(regenerate=False)
 	def get(self):
 		if not self.session.has_key('user'):
-			self.redirect(SITE_URL_ROOT + 'login/')
+			self.redirect('/fbnews/login/')
 			return
 
 		try:
@@ -119,36 +107,78 @@ class IndexPage(webapp.RequestHandler):
 			# TODO: Catch exception.
 			pass
 
+class TokenDirectStoringHandler(webapp.RequestHandler):
+	""" For Development action. """
+	@use_session(regenerate=False)
+	def get(self):
+		token = self.request.get('token', '')
+
+		me = get_profile(token)
+		if me.has_key('code') and int(me['code']) != 200:
+			self.response.set_status(400)
+			self.response.headers['Content-type'] = 'text/plain'
+			self.response.out.write("Failed to connect to Facebook.\n")
+			self.response.out.write('Token: ' + token + "\n")
+			self.response.out.write('Response: ' + str(me))
+
+		user = create_FbnewsFacebookConnect(me['id'], me['name'], token)
+		self.session['user'] = user
+
+		self.response.headers['Content-type'] = 'text/plain'
+		self.response.out.write("Succeeded to connect to Facebook.\n")
+
+class ClearSessionPage(webapp.RequestHandler):
+	""" For Development action. """
+	def get(self):
+		session_id = self.request.cookies.get(utils.COOKIE_SESSION_KEY, None)
+		if session_id is not None:
+			mc = memcache.Client()
+			mc.delete(session_id, namespace='session')
+		utils.remove_cookie_session(self.response.headers)
+		self.response.headers['Content-type'] = 'text/plain'
+		self.response.out.write('Cleared.')
+
+def get_profile(token):
+	url = "https://graph.facebook.com/me?access_token=%s&fields=name" % (token)
+	f = urllib.urlopen(url)
+	parsed_contents = simplejson.loads(f.read())
+
+	# Check response status.
+	if parsed_contents == {} and f.getcode() != 200:
+		return {'code':f.getcode()}
+
+	return parsed_contents
+
 def get_newsfeed(token):
 	url = 'https://graph.facebook.com/me/home?access_token=' + token
 	f = urllib.urlopen(url)
 	parsed_contents = simplejson.loads(f.read())
 
-	# TODO: Find error and throw a exception.
+	# Check response status.
+	if parsed_contents == {} and f.getcode() != 200:
+		return {'code':f.getcode()}
+
 	return parsed_contents
 
-class GetHandler(webapp.RequestHandler):
-	def get(self):
-		query = models.FbnewsFacebookConnect.all()
-		query.fetch(1)
-		if (query.count(1) is 0):
-			logging.info('FacebookConnect is empty.')
-		else:
-			user = query.get()
-			news = get_newsfeed(user.facebook_access_token)
-			logging.info(news)
-		return
+def create_FbnewsFacebookConnect(user_id, name, token):
+	user = models.FbnewsFacebookConnect(
+		facebook_user_id=user_id,
+		facebook_name=name,
+		facebook_access_token=token)
+	db.put(user)
+	return user
 
-class ClearSessionPage(webapp.RequestHandler):
-	""" Development action. """
-	def get(self):
-		session_id = self.request.cookies.get('coiled-session', None)
-		mc = memcache.Client()
-		if session_id is None:
-			return
-		mc.delete(session_id, namespace='session')
-		self.response.headers['Content-type'] = 'text/plain'
-		self.response.out.write('Cleared.')
+def get_FacebookConnect_by_id(id):
+	# TODO
+	pass
+
+def get_first_FacebookConnect(name):
+	query = models.FbnewsFacebookConnect.all()
+	if (query.count(1) is 0):
+		logging.info('In get_first_FacebookConnect, FacebookConnect is empty.')
+		return None
+	else:
+		return query.get()
 
 
 logging.getLogger().setLevel(logging.DEBUG)
@@ -158,8 +188,8 @@ application = webapp.WSGIApplication([
 		(r'/fbnews/login/', LoginPage),
 		(r'/fbnews/logout/', LogoutPage),
 		(r'/fbnews/redirect/', RedirectPage),
-		(r'/fbnews/get/', GetHandler),
-		(r'/fbnews/session/clear/', ClearSessionPage),
+		(r'/fbnews/develop/store/', TokenDirectStoringHandler),
+		(r'/fbnews/develop/clear/', ClearSessionPage),
 ])
 
 def main():
