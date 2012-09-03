@@ -21,14 +21,34 @@ from fbnews import settings
 APP_ROOT = os.path.dirname(__file__)
 SITE_URL_ROOT = 'http://iketrial.appspot.com/fbnews/'
 
-class LoginPage(webapp.RequestHandler):
+class IndexPageHandler(webapp.RequestHandler):
+	@use_session(regenerate=False)
+	def get(self):
+		if not self.session.has_key('user'):
+			self.redirect('/fbnews/login/')
+			return
+
+		try:
+			news = get_newsfeed(self.session['user'].facebook_access_token)
+			context = {
+				'user': self.session['user'],
+				'news': news,
+			}
+			template_path = os.path.join(APP_ROOT, 'templates/index.tpl')
+			self.response.headers['Content-type'] = 'text/html'
+			self.response.out.write(template.render(template_path, context))
+		except Exception:
+			# TODO: Catch exception.
+			pass
+
+class LoginPageHandler(webapp.RequestHandler):
 	@use_session(regenerate=False)
 	def get(self):
 		template_path = os.path.join(APP_ROOT, 'templates/login.tpl')
 		self.response.headers['Content-type'] = 'text/html'
 		self.response.out.write(template.render(template_path, {}))
 
-class LogoutPage(webapp.RequestHandler):
+class LogoutPageHandler(webapp.RequestHandler):
 	@use_session(regenerate=False)
 	def get(self):
 		session_id = self.request.cookies.get('coiled-session-fbnews', None)
@@ -42,7 +62,7 @@ class LogoutPage(webapp.RequestHandler):
 		utils.remove_cookie_session(self.response.headers)
 		self.redirect('/fbnews/login/')
 
-class RedirectPage(webapp.RequestHandler):
+class RedirectHandler(webapp.RequestHandler):
 	@use_session(regenerate=False)
 	def get(self):
 		redirect_uri = SITE_URL_ROOT + 'redirect/'
@@ -87,27 +107,7 @@ class RedirectPage(webapp.RequestHandler):
 
 			self.redirect('/fbnews/index/')
 
-class IndexPage(webapp.RequestHandler):
-	@use_session(regenerate=False)
-	def get(self):
-		if not self.session.has_key('user'):
-			self.redirect('/fbnews/login/')
-			return
-
-		try:
-			news = get_newsfeed(self.session['user'].facebook_access_token)
-			context = {
-				'user': self.session['user'],
-				'news': news,
-			}
-			template_path = os.path.join(APP_ROOT, 'templates/index.tpl')
-			self.response.headers['Content-type'] = 'text/html'
-			self.response.out.write(template.render(template_path, context))
-		except Exception:
-			# TODO: Catch exception.
-			pass
-
-class TokenDirectStoringHandler(webapp.RequestHandler):
+class DirectStoringHandler(webapp.RequestHandler):
 	""" For Development action. """
 	@use_session(regenerate=False)
 	def get(self):
@@ -127,7 +127,7 @@ class TokenDirectStoringHandler(webapp.RequestHandler):
 		self.response.headers['Content-type'] = 'text/plain'
 		self.response.out.write("Succeeded to connect to Facebook.\n")
 
-class ClearSessionPage(webapp.RequestHandler):
+class ClearSessionHandler(webapp.RequestHandler):
 	""" For Development action. """
 	def get(self):
 		session_id = self.request.cookies.get(utils.COOKIE_SESSION_KEY, None)
@@ -184,12 +184,12 @@ def get_first_FacebookConnect(name):
 logging.getLogger().setLevel(logging.DEBUG)
 
 application = webapp.WSGIApplication([
-		(r'/fbnews/index/', IndexPage),
-		(r'/fbnews/login/', LoginPage),
-		(r'/fbnews/logout/', LogoutPage),
-		(r'/fbnews/redirect/', RedirectPage),
-		(r'/fbnews/develop/store/', TokenDirectStoringHandler),
-		(r'/fbnews/develop/clear/', ClearSessionPage),
+		(r'/fbnews/index/',     IndexPageHandler),
+		(r'/fbnews/login/',     LoginPageHandler),
+		(r'/fbnews/logout/',    LogoutPageHandler),
+		(r'/fbnews/redirect/',  RedirectHandler),
+		(r'/fbnews/develop/store/', DirectStoringHandler),
+		(r'/fbnews/develop/clear/', ClearSessionHandler),
 ])
 
 def main():
