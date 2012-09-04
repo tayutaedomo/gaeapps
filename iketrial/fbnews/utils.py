@@ -67,7 +67,7 @@ def remove_cookie_session(headers):
 	cookie[COOKIE_SESSION_KEY] = ''
 	cookie[COOKIE_SESSION_KEY]["path"] = "/"
 	cookie[COOKIE_SESSION_KEY]["expires"] = expires_str
-	self.response.headers.add_header("Set-Cookie", cookie.output(header=''))
+	headers.add_header("Set-Cookie", cookie.output(header=''))
 
 def make_random_str(num):
 	s = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz123456789[]{}!$%&'()-^¥:;*+><"

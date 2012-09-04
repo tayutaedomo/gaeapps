@@ -73,7 +73,7 @@ class RedirectHandler(webapp.RequestHandler):
 				'client_id': settings.APP_ID,
 				'redirect_uri': redirect_uri,
 				'state': self.session['state'],
-				'scope': 'read_stream',
+				'scope': 'read_stream,',
 			}
 			url = 'https://www.facebook.com/dialog/oauth?' + urllib.urlencode(params)
 			self.redirect(url)
@@ -92,20 +92,40 @@ class RedirectHandler(webapp.RequestHandler):
 			f = urllib.urlopen(url)
 
 			# Get some info by Facebook API.
+			parsed_contents = cgi.parse_qs(f.read())
 			me = get_profile(parsed_contents['access_token'][0])
 
 			# Save to Datastore.
 			query = db.GqlQuery("SELECT * FROM FbnewsFacebookConnect WHERE facebook_user_id = '%s'" % (me['id']));
-			if (query.count(1) is 0):
-				create_FbnewsFacebookConnect(me['id'], me['name'], parsed_contents['access_token'][0])
+			if query.count(1) is 0:
+				user = create_FbnewsFacebookConnect(me['id'], me['name'], parsed_contents['access_token'][0])
 			else:
 				user = query.get()
 
-			if (user is not None):
-				# TODO: Need to regeneate session.
+			if user is not None:
 				self.session['user'] = user
 
 			self.redirect('/fbnews/index/')
+
+class AggregationHandler(webapp.RequestHandler):
+	def get(self):
+		user = get_first_FacebookConnect()
+		if user is None:
+			# TODO: Send mail.
+			logging.error('Can not get user info.')
+
+		self.response.headers['Content-type'] = 'text/plain' # @@debug
+
+		news = get_newsfeed(user.facebook_access_token)
+		for a_news in news['data']:
+			a_name = a_news['from']['name']
+			a_time = a_news['updated_time']
+			# TODO: Filtering of time.
+			jst_time = datetime.strptime(a_time, '%Y-%m-%dT%H:%M:%S+0000')
+			jst_time += timedelta(0, 3600*9)
+			self.response.out.write("%s : %s : %s\n" % (a_name, a_time, str(jst_time)))
+			# TODO: Desigin of Model.
+			# TODO: Register.
 
 class DirectStoringHandler(webapp.RequestHandler):
 	""" For Development action. """
@@ -172,7 +192,7 @@ def get_FacebookConnect_by_id(id):
 	# TODO
 	pass
 
-def get_first_FacebookConnect(name):
+def get_first_FacebookConnect():
 	query = models.FbnewsFacebookConnect.all()
 	if (query.count(1) is 0):
 		logging.info('In get_first_FacebookConnect, FacebookConnect is empty.')
@@ -188,6 +208,7 @@ application = webapp.WSGIApplication([
 		(r'/fbnews/login/',     LoginPageHandler),
 		(r'/fbnews/logout/',    LogoutPageHandler),
 		(r'/fbnews/redirect/',  RedirectHandler),
+		(r'/fbnews/aggregate/', AggregationHandler),
 		(r'/fbnews/develop/store/', DirectStoringHandler),
 		(r'/fbnews/develop/clear/', ClearSessionHandler),
 ])
