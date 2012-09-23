@@ -18,6 +18,10 @@ handlers:
    script: fbnews/views.py
    login: admin
 
+ - url: /fbnews/aggregate/
+   script: fbnews/views.py
+   login: admin
+
  - url: /fbnews/.*
    script: fbnews/views.py
 

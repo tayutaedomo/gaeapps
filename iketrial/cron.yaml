@@ -8,3 +8,8 @@ cron:
 #   url: /trial/cron/minutes/
 #   schedule: every hours at 0
 #   timezone: Asia/Tokyo
+
+ - description: Aggretation of Facebook news.
+   url: /fbnews/aggregate/
+   schedule: every 10 minutes
+   timezone: Asia/Tokyo
