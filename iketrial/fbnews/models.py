@@ -11,8 +11,8 @@ class FbnewsFacebookConnect(db.Model):
 
 class FbnewsNewsSummary(db.Model):
 	summary_key = db.StringProperty(required=True, indexed=True)
-	time_priod = db.DateTimeProperty()
-	name = db.StringProperty()
+	time_priod = db.DateTimeProperty(required=True, indexed=True)
+	name = db.StringProperty(required=True, indexed=True)
 	count = db.IntegerProperty(default=0)
 	created = db.DateTimeProperty(auto_now_add=True)
 	modified = db.DateTimeProperty(auto_now=True)
