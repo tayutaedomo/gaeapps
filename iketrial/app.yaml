@@ -4,6 +4,7 @@ runtime: python
 api_version: 1
 
 handlers:
+# trial.
  - url: /trial/cron/.*
    script: trial/views.py
    login: admin
@@ -11,9 +12,15 @@ handlers:
  - url: /trial/.*
    script: trial/views.py
 
+# Static files.
+ - url: /media
+   static_dir: media
+
+# fbweb
  - url: /fbweb/.*
    script: fbweb/views.py
 
+# fbnews
  - url: /fbnews/develop/.*
    script: fbnews/views.py
    login: admin
@@ -25,5 +32,10 @@ handlers:
  - url: /fbnews/.*
    script: fbnews/views.py
 
- - url: /media
-   static_dir: media
+# openid
+ - url: /_ah/login_required
+   script: do_openid_login.py
+
+ - url: /openid/.*
+   script: openid/views.py
+   #login: required
